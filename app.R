@@ -33,7 +33,15 @@ server<-function(input, output) {
         gamma <- matrix(c(input$g1, input$g3, input$g3, input$g2),2,2)
         deltaZ <- P%*%beta
         deltaP <- t(P)%*%gamma%*%P - deltaZ%*%t(deltaZ)
-        P2 <- P + deltaP # P after selection
+        
+        positivise <- function(x){
+            EI <- eigen(x)
+            z <- min(EI$values)
+            if(z < 0) {newP <- EI$vectors%*%diag(EI$values + abs(z))%*%solve(EI$vectors)} else {newP <- x}
+            return(newP)
+        }
+        
+        P2 <- positivise(x = P + deltaP) # P after selection, correction for non + def
 
         MVN2 <- mvrnorm(n = 1000, mu = c(0,0)+c(deltaZ[1,], deltaZ[2,]), Sigma=P2)
         mvn2 <- data.frame(x1 = MVN2[,1], x2 = MVN2[,2])
