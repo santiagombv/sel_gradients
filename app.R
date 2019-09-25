@@ -1,5 +1,6 @@
 library(shiny)
 library(ggplot2)
+library(MASS)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
