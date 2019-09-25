@@ -30,26 +30,14 @@ server<-function(input, output) {
         
         beta <- c(input$b1, input$b2)
         gamma <- matrix(c(input$g1, input$g3, input$g3, input$g2),2,2)
-        
-       # beta <- c(0.5, 0.7)
-        #gamma <- matrix(c(0.3, 0.4, 0.4, -0.5),2,2)
-        
         deltaZ <- P%*%beta
         deltaP <- t(P)%*%gamma%*%P - deltaZ%*%t(deltaZ)
         P2 <- P + deltaP # P after selection
 
-        
-        MVN2 <- mvrnorm(n = 1000, mu = c(0,0)+c(input$b1, input$b2), Sigma=P2)
+        MVN2 <- mvrnorm(n = 1000, mu = c(0,0)+c(deltaZ[1,], deltaZ[2,]), Sigma=P2)
         mvn2 <- data.frame(x1 = MVN2[,1], x2 = MVN2[,2])
         mvn3 <- rbind.data.frame(mvn, mvn2)
         mvn3$pob <- c(rep("antes", 1000), rep("despues", 1000))
-        
-     #   p0 <- ggplot(mvn3, aes(x=x1, y = x2)) + 
-     #       stat_density_2d(aes(fill = stat(level)), geom = "polygon") +
-     #      facet_grid(. ~ pob) + scale_fill_viridis_c() +
-     #      theme_bw() + theme(legend.position = "none") +
-     #      xlim(-3.5,3.5) + ylim(-3.5,3.5)
-     #  p0
         
         ggplot(mvn3, aes(x=x1, y = x2)) + 
             geom_density2d(aes(color=pob)) + 
