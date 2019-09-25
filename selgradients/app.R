@@ -8,6 +8,8 @@
 #
 
 library(shiny)
+library(ggplot2)
+library(MASS)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -21,21 +23,24 @@ ui <- fluidPage(
             width=3),
         
         mainPanel(
-            webGLOutput("pob1"), width=7)
+            plotOutput(outputId = "pob"), width=7)
     )
 )
 
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server<-function(input, output) {
+    output$pob <- renderPlot({
+        X<-matrix(c(1,0,0,1),2,2)
+        MVN <- mvrnorm(n = 1000, mu = c(0,0), Sigma=X)
+        mvn <- data.frame(x1 = MVN[,1], x2 = MVN[,2])
+        
+        t.kde <- kde2d(mvn$x1, mvn$x2, n = 50)   # from MASS package
+        col2 <- heat.colors(length(t.kde$z))[rank(t.kde$z)]
+        persp(x=t.kde, col =col2, theta = 20)
+        
+        #ggplot(data=mvn, aes(x=x1, y=x2)) + geom_hex() + theme_bw()
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
     })
 }
 
