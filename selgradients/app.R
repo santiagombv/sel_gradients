@@ -1,15 +1,5 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
 library(ggplot2)
-library(MASS)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -18,8 +8,11 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            sliderInput("b1", label = "beta 1", min=-2, max=2, value = 0, step = 0.1),
-            sliderInput("b2", label = "beta 2", min=-2, max=2, value = 0, step = 0.1), 
+            sliderInput("b1", label = "beta 1", min=-0.95, max=0.95, value = 0, step = 0.1),
+            sliderInput("b2", label = "beta 2", min=-0.95, max=0.95, value = 0, step = 0.1),
+            sliderInput("g1", label = "gamma 11", min=-0.95, max=0.95, value = 0, step = 0.1),
+            sliderInput("g2", label = "gamma 22", min=-0.95, max=0.95, value = 0, step = 0.1), 
+            sliderInput("g3", label = "gamma 12", min=-0.95, max=0.95, value = 0, step = 0.1),
             width=3),
         
         mainPanel(
@@ -31,16 +24,37 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server<-function(input, output) {
     output$pob <- renderPlot({
-        X<-matrix(c(1,0,0,1),2,2)
-        MVN <- mvrnorm(n = 1000, mu = c(0,0), Sigma=X)
+        P<-matrix(c(1,0,0,1),2,2)
+        MVN <- mvrnorm(n = 1000, mu = c(0,0), Sigma=P)
         mvn <- data.frame(x1 = MVN[,1], x2 = MVN[,2])
         
-        t.kde <- kde2d(mvn$x1, mvn$x2, n = 50)   # from MASS package
-        col2 <- heat.colors(length(t.kde$z))[rank(t.kde$z)]
-        persp(x=t.kde, col =col2, theta = 20)
+        beta <- c(input$b1, input$b2)
+        gamma <- matrix(c(input$g1, input$g3, input$g3, input$g2),2,2)
         
-        #ggplot(data=mvn, aes(x=x1, y=x2)) + geom_hex() + theme_bw()
+       # beta <- c(0.5, 0.7)
+        #gamma <- matrix(c(0.3, 0.4, 0.4, -0.5),2,2)
+        
+        deltaZ <- P%*%beta
+        deltaP <- t(P)%*%gamma%*%P - deltaZ%*%t(deltaZ)
+        P2 <- P + deltaP # P after selection
 
+        
+        MVN2 <- mvrnorm(n = 1000, mu = c(0,0)+c(input$b1, input$b2), Sigma=P2)
+        mvn2 <- data.frame(x1 = MVN2[,1], x2 = MVN2[,2])
+        mvn3 <- rbind.data.frame(mvn, mvn2)
+        mvn3$pob <- c(rep("antes", 1000), rep("despues", 1000))
+        
+     #   p0 <- ggplot(mvn3, aes(x=x1, y = x2)) + 
+     #       stat_density_2d(aes(fill = stat(level)), geom = "polygon") +
+     #      facet_grid(. ~ pob) + scale_fill_viridis_c() +
+     #      theme_bw() + theme(legend.position = "none") +
+     #      xlim(-3.5,3.5) + ylim(-3.5,3.5)
+     #  p0
+        
+        ggplot(mvn3, aes(x=x1, y = x2)) + 
+            geom_density2d(aes(color=pob)) + 
+            theme_bw() + xlim(-4,4) + ylim(-4,4) +
+            theme(legend.position = "bottom")
     })
 }
 
